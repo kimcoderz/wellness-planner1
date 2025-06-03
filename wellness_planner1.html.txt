@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wellness Planner</title>
+  <!-- Load Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* --------- Light Neutral Color Palette --------- */
+    :root {
+      --background: #FAFAFA;       /* very light gray */
+      --section-bg: #FFFFFF;       /* pure white */
+      --text-color: #333333;       /* dark gray for text */
+      --accent-light: #F5F1EE;     /* off-white/beige */
+      --accent-mid: #D9CFC9;       /* pale taupe */
+      --accent-dark: #B0A8A1;      /* muted brownish-gray */
+      --button-text: #FFFFFF;      /* white text on buttons */
+    }
+
+    /* --------- Basic Reset --------- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--background);
+    }
+    /* --------- Layout --------- */
+    #container {
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      color: var(--accent-dark);
+    }
+    header p {
+      font-size: 1rem;
+      color: var(--text-color);
+    }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    nav button {
+      background-color: var(--accent-mid);
+      color: var(--text-color);
+      border: none;
+      padding: 8px 12px;
+      margin: 4px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    nav button:hover {
+      background-color: var(--accent-dark);
+      color: var(--button-text);
+    }
+    nav button.active {
+      background-color: var(--accent-dark);
+      color: var(--button-text);
+    }
+    section {
+      display: none;
+      margin-bottom: 32px;
+      background-color: var(--section-bg);
+      padding: 16px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    section.active {
+      display: block;
+    }
+    /* --------- Form & Inputs --------- */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: bold;
+      color: var(--accent-dark);
+    }
+    input[type="number"],
+    input[type="date"],
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--accent-mid);
+      border-radius: 4px;
+      font-size: 1rem;
+      color: var(--text-color);
+      background-color: var(--accent-light);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    button.primary {
+      background-color: var(--accent-dark);
+      color: var(--button-text);
+      border: none;
+      padding: 10px 16px;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button.primary:hover {
+      background-color: var(--accent-mid);
+      color: var(--text-color);
+    }
+    button.secondary {
+      background-color: var(--accent-mid);
+      color: var(--text-color);
+      border: none;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 8px;
+      transition: background-color 0.2s;
+    }
+    button.secondary:hover {
+      background-color: var(--accent-dark);
+      color: var(--button-text);
+    }
+    /* --------- Chart Container --------- */
+    #chart-container {
+      width: 100%;
+      margin: 16px 0;
+    }
+    /* --------- Text Content (e-book style) --------- */
+    .content h2 {
+      font-size: 1.5rem;
+      margin: 16px 0 8px;
+      color: var(--accent-dark);
+    }
+    .content p, .content li {
+      margin-bottom: 12px;
+      color: var(--text-color);
+    }
+    .content ul, .content ol {
+      margin-left: 20px;
+      margin-bottom: 12px;
+    }
+    .callout {
+      background-color: var(--accent-light);
+      border-left: 4px solid var(--accent-mid);
+      padding: 12px;
+      margin: 16px 0;
+    }
+    .callout p {
+      color: var(--accent-dark);
+    }
+    /* --------- Graphics --------- */
+    .graphic {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /* --------- Responsive --------- */
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.6rem; }
+      nav button { font-size: 0.8rem; padding: 6px 10px; }
+      button.primary { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <header>
+      <h1>Interactive Wellness Planner</h1>
+      <p>For busy beginners (and older adults) who want to track weight & stay on track</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav>
+      <button class="tab-btn active" data-target="intro">Introduction</button>
+      <button class="tab-btn" data-target="education">Education</button>
+      <button class="tab-btn" data-target="tracker">Weight Tracker</button>
+      <button class="tab-btn" data-target="reflection">Reflection</button>
+      <button class="tab-btn" data-target="recipes">Recipes</button>
+      <button class="tab-btn" data-target="workouts">Workouts</button>
+      <button class="tab-btn" data-target="resources">Resources</button>
+    </nav>
+
+    <!-- INTRODUCTION SECTION -->
+    <section id="intro" class="active">
+      <div class="content">
+        <h2>Welcome & How to Use</h2>
+        <p>
+          Congratulations on taking the first step toward a healthier you! This planner is designed
+          for people who are new to tracking their weight and wellness—especially if you’re busy or
+          prefer a simple, no-fuss approach. You don’t need any special equipment beyond a reliable
+          scale and your smartphone or computer.
+        </p>
+        <h2>Getting Started</h2>
+        <ul>
+          <li><strong>Step 1:</strong> Click “Weight Tracker” in the menu above to log your current weight (in kg).</li>
+          <li><strong>Step 2:</strong> Review the “Progress Chart”—it automatically updates each time you log.</li>
+          <li><strong>Step 3:</strong> Browse “Education” for quick tips on nutrition, exercise, healthy habits, and prayer points.</li>
+          <li><strong>Step 4:</strong> Use the “Recipes” tab for simple weight-loss meals, and “Workouts” tab for quick routines.</li>
+          <li><strong>Step 5:</strong> Fill out “Reflection” each week to stay accountable and note any challenges.</li>
+        </ul>
+        <div class="callout">
+          <p><strong>Tip:</strong> Aim to log your weight at the same time (e.g., first thing in the morning) once or twice a week. Consistency helps you see real trends.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- EDUCATION SECTION -->
+    <section id="education">
+      <div class="content">
+        <h2>Nutrition Basics</h2>
+        <p>
+          • To lose about 0.5 kg per week, you need an approximate 500 kcal daily deficit. Most adults aiming for gradual, sustainable loss target around 1 500–2 000 kcal per day—adjust based on your size and activity.  
+        </p>
+        <div class="callout">
+          <p>“A 500 kcal deficit per day usually leads to ~0.5 kg weight loss per week.” — WHO, NHS guidelines</p>
+        </div>
+        <h2>Simple Eating Tips</h2>
+        <ul>
+          <li>Fill half your plate with non-starchy vegetables (broccoli, spinach, carrots).</li>
+          <li>Choose lean proteins (chicken breast, fish, beans) and whole grains (brown rice, oats).</li>
+          <li>Aim for roughly 25–30 g of protein per meal to help you feel full longer (e.g., two eggs + Greek yogurt). — NHS.uk</li>
+          <li>Limit sugary drinks—opt for water, sparkling water with lemon, or herbal tea.</li>
+          <li>Practice mindful eating: chew slowly, savor each bite, pause halfway through your meal.</li>
+        </ul>
+        <h2>Exercise Foundations</h2>
+        <p>
+          Adults should aim for at least 150 minutes of moderate aerobic activity per week (e.g., brisk walking, light cycling). If you’re very busy, break that into 10–15 minute walks after meals—every step counts.
+        </p>
+        <ul>
+          <li>Try a 15-minute “sit-stand” break every hour—stand up, march in place, or do gentle stretches.</li>
+          <li>Strength-building: two short sessions per week. Example: 8–12 bodyweight squats, 6–8 wall push-ups, 15 sec plank × 2 sets.</li>
+          <li>If mobility is a concern, chair-based exercises (seated leg raises, seated arm curls with water bottles) are excellent.</li>
+        </ul>
+        <h2>Healthy Habits for Busy Lives</h2>
+        <ul>
+          <li><strong>Sleep:</strong> Aim for 7–9 hours per night. Good sleep supports hunger hormones (leptin, ghrelin). — HarvardHealth</li>
+          <li><strong>Stress Management:</strong> Even 3 minutes of deep breathing (inhale 4 sec, hold 7 sec, exhale 8 sec) can lower cortisol. — MayoClinic</li>
+          <li><strong>Hydration:</strong> 1.5–2 L of water per day (more if you exercise). Sometimes we mistake thirst for hunger.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- WEIGHT TRACKER SECTION -->
+    <section id="tracker">
+      <div class="content">
+        <h2>Log Your Weight</h2>
+        <div class="form-group">
+          <label for="entryDate">Date:</label>
+          <input type="date" id="entryDate" value="" />
+        </div>
+        <div class="form-group">
+          <label for="entryWeight">Weight (kg):</label>
+          <input type="number" id="entryWeight" step="0.1" placeholder="e.g., 72.5" />
+        </div>
+        <button class="primary" id="saveEntryBtn">Save Entry</button>
+
+        <div id="chart-container">
+          <canvas id="weightChart"></canvas>
+        </div>
+
+        <div id="summaryStats">
+          <!-- JS will populate total loss and avg weekly change -->
+        </div>
+
+        <button class="secondary" id="exportCsvBtn">Export CSV</button>
+      </div>
+    </section>
+
+    <!-- REFLECTION SECTION -->
+    <section id="reflection">
+      <div class="content">
+        <h2>Weekly Reflection</h2>
+        <p>Take a minute each week to note how things went:</p>
+        <div class="form-group">
+          <label for="reflectionDate">Date (enter the latest Sunday or any day):</label>
+          <input type="date" id="reflectionDate" />
+        </div>
+        <div class="form-group">
+          <label for="weeklyWins">1) My biggest win this week:</label>
+          <textarea id="weeklyWins" placeholder="e.g., I walked every morning"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="weeklyChallenges">2) Main challenges faced:</label>
+          <textarea id="weeklyChallenges" placeholder="e.g., Hard to resist snacks at work"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="motivationLevel">3) Motivation (1–10) and why:</label>
+          <input type="number" id="motivationLevel" min="1" max="10" />
+        </div>
+        <button class="primary" id="saveReflectionBtn">Save Reflection</button>
+        <div id="reflectionList">
+          <!-- JS will list saved reflections here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- RECIPES SECTION -->
+    <section id="recipes">
+      <div class="content">
+        <h2>Simple Weight-Loss Recipes</h2>
+
+        <!-- Recipe 1: 3-Ingredient Pancakes -->
+        <h3>3-Ingredient Oat Pancakes</h3>
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTgwIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI0Q5Q0ZDNyIgLz4KICA8dGV4dCB4PSIxNTAiIHk9IjkwIiBmb250LXNpemU9IjI0IiBmb250LWZhbWlseT0iQXJpYWwiIGZpbGw9IiNCMEE4QTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIj5QYW5jYWtlczwvdGV4dD4KPC9zdmc+"
+          alt="3-Ingredient Pancakes"
+          class="graphic"
+        />
+        <p>These pancakes use just oats, eggs, and ripe banana—perfect for a quick, filling breakfast.</p>
+        <ul>
+          <li><strong>Ingredients:</strong>  
+            <ul>
+              <li>1 ripe banana</li>
+              <li>1 egg</li>
+              <li>½ cup rolled oats (gluten-free if needed)</li>
+            </ul>
+          </li>
+          <li><strong>Instructions:</strong>  
+            <ol>
+              <li>Mash the banana in a bowl until smooth.</li>
+              <li>Stir in the egg and mix well.</li>
+              <li>Add the oats and let the batter rest for 2 minutes to thicken.</li>
+              <li>Heat a nonstick skillet over medium-low. Lightly grease with cooking spray.  
+                Pour 2–3 tablespoons of batter per pancake. Cook 2–3 minutes each side, until golden.  
+              </li>
+              <li>Serve with fresh berries or a drizzle of plain Greek yogurt if desired.</li>
+            </ol>
+          </li>
+          <li><strong>Approx. Nutrition (per 3 pancakes):</strong> ~250 kcal, 10 g protein, 35 g carbs, 6 g fat.</li>
+        </ul>
+        <div class="callout">
+          <p><strong>Tip:</strong> Batch extra pancakes and freeze individually separated by parchment paper. Reheat in toaster or microwave.</p>
+        </div>
+
+        <!-- Recipe 2: Veggie Egg Muffins -->
+        <h3>Veggie Egg Muffins</h3>
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTgwIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI0Q5Q0ZDNyIgLz4KICA8dGV4dCB4PSIxNTAiIHk9IjkwIiBmb250LXNpemU9IjI0IiBmb250LWZhbWlseT0iQXJpYWwiIGZpbGw9IiNCMEE4QTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIj5FZ2cgTXVmZmluczwvdGV4dD4KPC9zdmc+"
+          alt="Veggie Egg Muffins"
+          class="graphic"
+        />
+        <p>Make a batch ahead for grab-and-go protein. Customize with any veggies you have.</p>
+        <ul>
+          <li><strong>Ingredients (makes 6 muffins):</strong>  
+            <ul>
+              <li>4 large eggs</li>
+              <li>¼ cup chopped bell pepper (any color)</li>
+              <li>¼ cup chopped spinach</li>
+              <li>2 tbsp diced onion</li>
+              <li>Salt & pepper to taste</li>
+            </ul>
+          </li>
+          <li><strong>Instructions:</strong>  
+            <ol>
+              <li>Preheat oven to 180 °C (350 °F). Grease a 6-cup muffin tin.</li>
+              <li>In a bowl, whisk eggs, then stir in veggies, salt, and pepper.</li>
+              <li>Pour mixture evenly into muffin cups (about ¼ cup each).</li>
+              <li>Bake 15–18 minutes until eggs are set and tops are light golden.</li>
+              <li>Let cool 5 minutes, then remove and store in an airtight container.</li>
+            </ol>
+          </li>
+          <li><strong>Approx. Nutrition (per muffin):</strong> ~70 kcal, 6 g protein, 2 g carbs, 4 g fat.</li>
+        </ul>
+
+        <!-- Recipe 3: Mason Jar Salad -->
+        <h3>Mason Jar Layered Salad</h3>
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTgwIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI0Q5Q0ZDNyIgLz4KICA8dGV4dCB4PSIxNTAiIHk9IjkwIiBmb250LXNpemU9IjI0IiBmb250LWZhbWlseT0iQXJpYWwiIGZpbGw9IiNCMEE4QTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIj5TYWxhZDwvdGV4dD4KPC9zdmc+"
+          alt="Mason Jar Salad"
+          class="graphic"
+        />
+        <p>Build a grab-and-go salad with layers that stay crisp. Change out veggies/fillings as you like.</p>
+        <ul>
+          <li><strong>Ingredients (per jar):</strong>  
+            <ul>
+              <li>2 tbsp vinaigrette dressing</li>
+              <li>¼ cup cherry tomatoes, halved</li>
+              <li>¼ cup cucumber, diced</li>
+              <li>½ cup mixed greens (spinach, lettuce, arugula)</li>
+              <li>½ cup shredded chicken or chickpeas (optional protein)</li>
+            </ul>
+          </li>
+          <li><strong>Instructions:</strong>  
+            <ol>
+              <li>In a pint-sized mason jar, pour dressing first (bottom layer).</li>
+              <li>Add cherry tomatoes and cucumber (next layer).</li>
+              <li>Spoon in protein (chicken or chickpeas).</li>
+              <li>Top with mixed greens—seal jar and refrigerate.</li>
+              <li>When ready to eat, shake jar vigorously so dressing coats everything.</li>
+            </ol>
+          </li>
+          <li><strong>Approx. Nutrition (per jar without protein):</strong> ~150 kcal, 3 g protein, 10 g carbs, 10 g fat.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- WORKOUTS SECTION -->
+    <section id="workouts">
+      <div class="content">
+        <h2>Quick Workouts for Busy Lives</h2>
+        <p>Each routine takes 5–10 minutes and can be done at home—no equipment needed (or use a chair).</p>
+
+        <!-- Workout 1: Chair-Based Routine -->
+        <h3>10-Minute Chair Workout</h3>
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTgwIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI0Q5Q0ZDNyIgLz4KICA8dGV4dCB4PSIxNTAiIHk9IjkwIiBmb250LXNpemU9IjI0IiBmb250LWZhbWlseT0iQXJpYWwiIGZpbGw9IiNCMEE4QTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIj5DaGFpciBXb3Jrb3V0PC90ZXh0Pgo8L3N2Zz4="
+          alt="Chair-Based Workout"
+          class="graphic"
+        />
+        <ol>
+          <li>Seated Marching – 1 minute (lift knees alternately while seated).</li>
+          <li>Seated Leg Extensions – 30 sec per leg (extend one leg straight, hold 1 sec, switch).</li>
+          <li>Seated Arm Circles – 1 minute (arms extended, make small circles).</li>
+          <li>Seated Chair Squats – 1 minute (sit to stand, use chair armrests for support).</li>
+          <li>Seated Torso Twists – 1 minute (twist torso gently side to side).</li>
+          <li>Seated Calf Raises – 1 minute (raise heels off floor while seated).</li>
+          <li>Seated Bicep Curls – 1 minute (use water bottles or cans as light weights).</li>
+          <li>Seated Knee Lifts – 1 minute (lift knees high toward chest).</li>
+          <li>Seated Side Leg Raises – 30 sec per side (lift leg laterally while seated).</li>
+          <li>Deep Breathing & Stretch – 1 minute (inhale deeply, raise arms overhead, exhale slowly).</li>
+        </ol>
+        <div class="callout">
+          <p><strong>Tip:</strong> Perform this routine 2–3 times a week. You can split the moves into shorter sessions if needed (e.g., 5 minutes in the morning, 5 minutes in the evening).</p>
+        </div>
+
+        <!-- Workout 2: Standing Mini-Circuit -->
+        <h3>5-Minute Standing Circuit</h3>
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTgwIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI0Q5Q0ZDNyIgLz4KICA8dGV4dCB4PSIxNTAiIHk9IjkwIiBmb250LXNpemU9IjI0IiBmb250LWZhbWlseT0iQXJpYWwiIGZpbGw9IiNCMEE4QTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIj5TdGFuZGluZyBDaXJjdWl0PC90ZXh0Pgo8L3N2Zz4="
+          alt="Standing Mini-Circuit"
+          class="graphic"
+        />
+        <ol>
+          <li>30 sec Jumping Jacks (or side steps if impact is an issue).</li>
+          <li>30 sec Bodyweight Squats.</li>
+          <li>30 sec Knee Push-Ups (hands on a sturdy table or countertop).</li>
+          <li>30 sec Alternating Forward Lunges (no weights).</li>
+          <li>30 sec Plank (on knees if needed).</li>
+          <li>30 sec High Knees (march in place lifting knees to waist).</li>
+          <li>30 sec Wall Sit (back against wall, knees at 90°).</li>
+          <li>30 sec Standing Calf Raises.</li>
+          <li>30 sec Arm Circles (wide, forward then backward).</li>
+          <li>30 sec March in Place (cool-down).</li>
+        </ol>
+        <div class="callout">
+          <p><strong>Tip:</strong> Repeat this circuit twice for a full 10-minute session, or sprinkle one mini-circuit during a break at work.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESOURCES SECTION -->
+    <section id="resources">
+      <div class="content">
+        <h2>Prayer Points for Staying Healthy</h2>
+        <ul>
+          <li><strong>Gratitude:</strong> “Lord, thank You for the gift of my body. Help me to honor it well today.”</li>
+          <li><strong>Strength:</strong> “God, grant me strength and perseverance to make healthy choices even when I’m busy or tired.”</li>
+          <li><strong>Wisdom:</strong> “Father, give me wisdom to eat nourishing foods and exercise in ways that serve my long-term health.”</li>
+          <li><strong>Discipline:</strong> “Holy Spirit, guide me to be disciplined in my eating habits and daily routines.”</li>
+          <li><strong>Healing:</strong> “Jesus, bring healing to any areas of my body that need restoration, and protect me from illness.”</li>
+          <li><strong>Rest:</strong> “God, help me prioritize rest and sleep so that my body and mind can recharge.”</li>
+          <li><strong>Peace:</strong> “Lord, calm my worries and anxieties so stress does not sabotage my health journey.”</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>NHS (2024). “How to lose weight.” Retrieved from NHS.uk.</li>
+          <li>World Health Organization (2023). “Global Recommendations on Physical Activity for Health.”</li>
+          <li>NHS.uk. “Eat Well.”</li>
+          <li>MayoClinic.org. “Stress Management.”</li>
+          <li>HarvardHealth.edu. “How Sleep Affects Your Health.”</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ------------ JavaScript Logic ------------
+
+    // Utility: Get element by ID
+    const $ = id => document.getElementById(id);
+
+    // --- Tab Navigation ---
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Remove active from all buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Show corresponding section
+        const target = btn.getAttribute('data-target');
+        document.querySelectorAll('section').forEach(sec => {
+          sec.id === target ? sec.classList.add('active') : sec.classList.remove('active');
+        });
+      });
+    });
+
+    // --- WEIGHT TRACKING SETUP ---
+    const ENTRY_KEY = 'weightLogEntries';
+    let weightEntries = JSON.parse(localStorage.getItem(ENTRY_KEY) || '[]');
+
+    // Initialize date picker to today
+    const todayDate = new Date().toISOString().split('T')[0];
+    $('entryDate').value = todayDate;
+
+    // Draw chart function
+    let weightChart; // will hold Chart.js instance
+
+    function renderChart() {
+      const ctx = $('weightChart').getContext('2d');
+      // Sort entries by date
+      weightEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const labels = weightEntries.map(e => e.date);
+      const dataPoints = weightEntries.map(e => e.weight);
+
+      const data = {
+        labels: labels,
+        datasets: [{
+          label: 'Weight (kg)',
+          data: dataPoints,
+          borderColor: 'var(--accent-dark)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1,
+          pointBackgroundColor: 'var(--accent-mid)',
+          pointRadius: 4
+        }]
+      };
+      const config = {
+        type: 'line',
+        data: data,
+        options: {
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                parser: 'YYYY-MM-DD',
+                unit: 'week',
+                displayFormats: {
+                  week: 'MMM D'
+                }
+              },
+              grid: {
+                color: '#ececec'
+              }
+            },
+            y: {
+              beginAtZero: false,
+              grid: {
+                color: '#ececec'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      };
+      // Destroy previous chart if exists
+      if (weightChart) weightChart.destroy();
+      weightChart = new Chart(ctx, config);
+      updateSummary();
+    }
+
+    function updateSummary() {
+      if (weightEntries.length < 2) {
+        $('summaryStats').innerHTML = '<p>Log at least two entries to see summary stats.</p>';
+        return;
+      }
+      const first = weightEntries[0].weight;
+      const last = weightEntries[weightEntries.length - 1].weight;
+      const totalChange = (last - first).toFixed(1);
+      const totalLoss = (first - last).toFixed(1);
+      // Weeks elapsed = (lastDate - firstDate) / (7*24*60*60*1000)
+      const firstDate = new Date(weightEntries[0].date);
+      const lastDate = new Date(weightEntries[weightEntries.length - 1].date);
+      const weeksElapsed = ((lastDate - firstDate) / (1000 * 60 * 60 * 24 * 7));
+      const avgChange = (totalChange / weeksElapsed).toFixed(2);
+
+      let summaryHtml = '';
+      if (totalLoss > 0) {
+        summaryHtml += `<p><strong>Total lost:</strong> ${totalLoss} kg</p>`;
+      } else if (totalLoss < 0) {
+        summaryHtml += `<p><strong>Total gained:</strong> ${Math.abs(totalLoss)} kg</p>`;
+      } else {
+        summaryHtml += `<p><strong>No overall change yet.</strong></p>`;
+      }
+      summaryHtml += `<p><strong>Average weekly change:</strong> ${Math.abs(avgChange)} kg/week</p>`;
+      $('summaryStats').innerHTML = summaryHtml;
+    }
+
+    // Save new weight entry
+    $('saveEntryBtn').addEventListener('click', () => {
+      const date = $('entryDate').value;
+      const weight = parseFloat($('entryWeight').value);
+      if (!date || isNaN(weight) || weight <= 0) {
+        alert('Please enter a valid date and weight.');
+        return;
+      }
+      // Prevent duplicate date entries—overwrite if same date
+      const existingIdx = weightEntries.findIndex(e => e.date === date);
+      if (existingIdx >= 0) {
+        if (!confirm(`An entry for ${date} already exists. Overwrite?`)) return;
+        weightEntries[existingIdx].weight = weight;
+      } else {
+        weightEntries.push({ date, weight });
+      }
+      localStorage.setItem(ENTRY_KEY, JSON.stringify(weightEntries));
+      $('entryWeight').value = '';
+      renderChart();
+    });
+
+    // Export CSV
+    $('exportCsvBtn').addEventListener('click', () => {
+      if (weightEntries.length === 0) {
+        alert('No entries to export.');
+        return;
+      }
+      let csvContent = 'Date,Weight (kg)\n';
+      // Sort by date
+      weightEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+      weightEntries.forEach(e => {
+        csvContent += `${e.date},${e.weight}\n`;
+      });
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'weight_log.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // On load, render chart if entries exist
+    window.addEventListener('DOMContentLoaded', () => {
+      renderChart();
+      renderReflections();
+    });
+
+    // --- REFLECTION LOGIC ---
+    const REF_KEY = 'weeklyReflections';
+    let reflections = JSON.parse(localStorage.getItem(REF_KEY) || '[]');
+
+    function renderReflections() {
+      if (!reflections.length) {
+        $('reflectionList').innerHTML = '<p>No reflections saved yet.</p>';
+        return;
+      }
+      // Sort by date descending
+      reflections.sort((a, b) => new Date(b.date) - new Date(a.date));
+      let html = '<h3>Saved Reflections:</h3>';
+      reflections.forEach(r => {
+        html += `
+          <div style="border:1px solid var(--accent-mid); padding:10px; margin-bottom:12px; background:var(--accent-light); border-radius:4px;">
+            <p><strong>Date:</strong> ${r.date}</p>
+            <p><strong>Win:</strong> ${r.win}</p>
+            <p><strong>Challenges:</strong> ${r.challenge}</p>
+            <p><strong>Motivation (${r.motivation}/10):</strong> ${r.motivationNote}</p>
+          </div>
+        `;
+      });
+      $('reflectionList').innerHTML = html;
+    }
+
+    $('saveReflectionBtn').addEventListener('click', () => {
+      const date = $('reflectionDate').value;
+      const win = $('weeklyWins').value.trim();
+      const challenge = $('weeklyChallenges').value.trim();
+      const motivation = parseInt($('motivationLevel').value);
+      const motivationNote = $('motivationLevel').value.trim();
+
+      if (!date || !win || !challenge || isNaN(motivation) || motivation < 1 || motivation > 10) {
+        alert('Please complete all reflection fields.');
+        return;
+      }
+      reflections.push({
+        date,
+        win,
+        challenge,
+        motivation,
+        motivationNote
+      });
+      localStorage.setItem(REF_KEY, JSON.stringify(reflections));
+      $('reflectionDate').value = '';
+      $('weeklyWins').value = '';
+      $('weeklyChallenges').value = '';
+      $('motivationLevel').value = '';
+      renderReflections();
+    });
+  </script>
+</body>
+</html>
